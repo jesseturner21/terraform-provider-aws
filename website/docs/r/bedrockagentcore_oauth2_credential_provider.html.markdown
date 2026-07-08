@@ -221,6 +221,7 @@ The `authorization_server_metadata` block supports the following:
 * `authorization_endpoint` - (Required) OAuth2 authorization endpoint URL.
 * `token_endpoint` - (Required) OAuth2 token endpoint URL.
 * `response_types` - (Optional) Set of OAuth2 response types supported by the authorization server.
+* `token_endpoint_auth_methods` - (Optional) Set of one or two client authentication methods supported by the token endpoint. Valid values are `client_secret_post` and `client_secret_basic`.
 
 ## Attribute Reference
 
