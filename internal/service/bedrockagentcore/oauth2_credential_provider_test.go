@@ -178,7 +178,7 @@ func TestAccBedrockAgentCoreOAuth2CredentialProvider_authorizationServerMetadata
 		CheckDestroy:             testAccCheckOAuth2CredentialProviderDestroy(ctx, t),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccOAuth2CredentialProviderConfig_customWithAuthServerMetadata(rName, "keycloak-client-id", "keycloak-client-secret", 1, "https://auth.company.com/realms/production", "https://auth.company.com/realms/production/protocol/openid-connect/auth", "https://auth.company.com/realms/production/protocol/openid-connect/token", "code", "id_token"),
+				Config: testAccOAuth2CredentialProviderConfig_customWithAuthServerMetadata(rName, "keycloak-client-id", "keycloak-client-secret", 1, "https://auth.company.com/realms/production", "https://auth.company.com/realms/production/protocol/openid-connect/auth", "https://auth.company.com/realms/production/protocol/openid-connect/token", "code", "id_token", `["client_secret_post", "client_secret_basic"]`),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckOAuth2CredentialProviderExists(ctx, t, resourceName, &oauth2credentialprovider),
 					resource.TestCheckResourceAttr(resourceName, "oauth2_provider_config.0.custom_oauth2_provider_config.0.oauth_discovery.0.authorization_server_metadata.0.token_endpoint_auth_methods.#", "2"),
@@ -188,6 +188,35 @@ func TestAccBedrockAgentCoreOAuth2CredentialProvider_authorizationServerMetadata
 				ConfigPlanChecks: resource.ConfigPlanChecks{
 					PreApply: []plancheck.PlanCheck{
 						plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionCreate),
+					},
+				},
+			},
+			{
+				// Update the set from two methods to one: proves token_endpoint_auth_methods
+				// mutates in place and round-trips (not a spurious replace).
+				Config: testAccOAuth2CredentialProviderConfig_customWithAuthServerMetadata(rName, "keycloak-client-id", "keycloak-client-secret", 1, "https://auth.company.com/realms/production", "https://auth.company.com/realms/production/protocol/openid-connect/auth", "https://auth.company.com/realms/production/protocol/openid-connect/token", "code", "id_token", `["client_secret_basic"]`),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckOAuth2CredentialProviderExists(ctx, t, resourceName, &oauth2credentialprovider),
+					resource.TestCheckResourceAttr(resourceName, "oauth2_provider_config.0.custom_oauth2_provider_config.0.oauth_discovery.0.authorization_server_metadata.0.token_endpoint_auth_methods.#", "1"),
+					resource.TestCheckTypeSetElemAttr(resourceName, "oauth2_provider_config.0.custom_oauth2_provider_config.0.oauth_discovery.0.authorization_server_metadata.0.token_endpoint_auth_methods.*", "client_secret_basic"),
+				),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionUpdate),
+					},
+				},
+			},
+			{
+				// Remove token_endpoint_auth_methods entirely (set->unset): the API clears
+				// it and the null read-back matches, so there is no perpetual diff.
+				Config: testAccOAuth2CredentialProviderConfig_customWithAuthServerMetadataNoAuthMethods(rName, "keycloak-client-id", "keycloak-client-secret", 1, "https://auth.company.com/realms/production", "https://auth.company.com/realms/production/protocol/openid-connect/auth", "https://auth.company.com/realms/production/protocol/openid-connect/token", "code", "id_token"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckOAuth2CredentialProviderExists(ctx, t, resourceName, &oauth2credentialprovider),
+					resource.TestCheckResourceAttr(resourceName, "oauth2_provider_config.0.custom_oauth2_provider_config.0.oauth_discovery.0.authorization_server_metadata.0.token_endpoint_auth_methods.#", "0"),
+				),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionUpdate),
 					},
 				},
 			},
@@ -624,7 +653,7 @@ resource "aws_bedrockagentcore_oauth2_credential_provider" "test" {
 `, rName, clientId, clientSecret, version, discoveryURL)
 }
 
-func testAccOAuth2CredentialProviderConfig_customWithAuthServerMetadata(rName, clientId, clientSecret string, version int, issuer, authEndpoint, tokenEndpoint, responseType1, responseType2 string) string {
+func testAccOAuth2CredentialProviderConfig_customWithAuthServerMetadata(rName, clientId, clientSecret string, version int, issuer, authEndpoint, tokenEndpoint, responseType1, responseType2, authMethods string) string {
 	return fmt.Sprintf(`
 resource "aws_bedrockagentcore_oauth2_credential_provider" "test" {
   name = %[1]q
@@ -642,7 +671,33 @@ resource "aws_bedrockagentcore_oauth2_credential_provider" "test" {
           authorization_endpoint      = %[6]q
           token_endpoint              = %[7]q
           response_types              = [%[8]q, %[9]q]
-          token_endpoint_auth_methods = ["client_secret_post", "client_secret_basic"]
+          token_endpoint_auth_methods = %[10]s
+        }
+      }
+    }
+  }
+}
+`, rName, clientId, clientSecret, version, issuer, authEndpoint, tokenEndpoint, responseType1, responseType2, authMethods)
+}
+
+func testAccOAuth2CredentialProviderConfig_customWithAuthServerMetadataNoAuthMethods(rName, clientId, clientSecret string, version int, issuer, authEndpoint, tokenEndpoint, responseType1, responseType2 string) string {
+	return fmt.Sprintf(`
+resource "aws_bedrockagentcore_oauth2_credential_provider" "test" {
+  name = %[1]q
+
+  credential_provider_vendor = "CustomOauth2"
+  oauth2_provider_config {
+    custom_oauth2_provider_config {
+      client_id_wo                  = %[2]q
+      client_secret_wo              = %[3]q
+      client_credentials_wo_version = %[4]d
+
+      oauth_discovery {
+        authorization_server_metadata {
+          issuer                 = %[5]q
+          authorization_endpoint = %[6]q
+          token_endpoint         = %[7]q
+          response_types         = [%[8]q, %[9]q]
         }
       }
     }
