@@ -405,6 +405,17 @@ func (r *oauth2CredentialProviderResource) Schema(ctx context.Context, request r
 															"token_endpoint": schema.StringAttribute{
 																Required: true,
 															},
+															"token_endpoint_auth_methods": schema.SetAttribute{
+																CustomType:  fwtypes.SetOfStringType,
+																ElementType: types.StringType,
+																Optional:    true,
+																Validators: []validator.Set{
+																	setvalidator.SizeBetween(1, 2),
+																	setvalidator.ValueStringsAre(
+																		stringvalidator.RegexMatches(regexache.MustCompile(`^(client_secret_post|client_secret_basic)$`), ""),
+																	),
+																},
+															},
 														},
 													},
 												},
@@ -1248,8 +1259,9 @@ func (m oauth2DiscoveryModel) Expand(ctx context.Context) (any, diag.Diagnostics
 }
 
 type oauth2AuthorizationServerMetadataModel struct {
-	AuthorizationEndpoint types.String        `tfsdk:"authorization_endpoint"`
-	Issuer                types.String        `tfsdk:"issuer"`
-	ResponseTypes         fwtypes.SetOfString `tfsdk:"response_types"`
-	TokenEndpoint         types.String        `tfsdk:"token_endpoint"`
+	AuthorizationEndpoint    types.String        `tfsdk:"authorization_endpoint"`
+	Issuer                   types.String        `tfsdk:"issuer"`
+	ResponseTypes            fwtypes.SetOfString `tfsdk:"response_types"`
+	TokenEndpoint            types.String        `tfsdk:"token_endpoint"`
+	TokenEndpointAuthMethods fwtypes.SetOfString `tfsdk:"token_endpoint_auth_methods"`
 }

@@ -99,12 +99,12 @@ The `oauth2_provider_config` block must contain exactly one of the following pro
 * `github_oauth2_provider_config` - (Optional) GitHub OAuth provider configuration. See [`predefined providers`](#predefined-providers) below.
 * `google_oauth2_provider_config` - (Optional) Google OAuth provider configuration. See [`predefined providers`](#predefined-providers) below.
 * `included_oauth2_provider_config` - (Optional) Configuration for an included (vendor-supported) OAuth2 provider, used for the additional supported vendors. See [`predefined providers`](#predefined-providers) below.
-
--> **Note:** `included_oauth2_provider_config` currently supports only vendors that have fixed, AWS-known OAuth2 endpoints (for example `XOauth2`, `FacebookOauth2`, `SpotifyOauth2`), which require nothing beyond `client_id` and `client_secret`. Isolated-tenant vendors such as `OktaOauth2`, `PingOneOauth2`, and `OneLoginOauth2` require provider-specific endpoints (`issuer`, `authorization_endpoint`, `token_endpoint`) that are not yet exposed by this resource, and will fail at create time with a `Missing TokenEndpoint` error. Support for those fields is planned in a follow-up.
 * `linkedin_oauth2_provider_config` - (Optional) LinkedIn OAuth provider configuration. See [`predefined providers`](#predefined-providers) below.
 * `microsoft_oauth2_provider_config` - (Optional) Microsoft OAuth provider configuration. See [`predefined providers`](#predefined-providers) below.
 * `salesforce_oauth2_provider_config` - (Optional) Salesforce OAuth provider configuration. See [`predefined providers`](#predefined-providers) below.
 * `slack_oauth2_provider_config` - (Optional) Slack OAuth provider configuration. See [`predefined providers`](#predefined-providers) below.
+
+-> **Note:** `included_oauth2_provider_config` currently supports only vendors that have fixed, AWS-known OAuth2 endpoints (for example `XOauth2`, `FacebookOauth2`, `SpotifyOauth2`), which require nothing beyond `client_id` and `client_secret`. Isolated-tenant vendors such as `OktaOauth2`, `PingOneOauth2`, and `OneLoginOauth2` require provider-specific endpoints (`issuer`, `authorization_endpoint`, `token_endpoint`) that are not yet exposed by this resource, and will fail at create time with a `Missing TokenEndpoint` error. Support for those fields is planned in a follow-up.
 
 ### `custom`
 
@@ -221,6 +221,7 @@ The `authorization_server_metadata` block supports the following:
 * `authorization_endpoint` - (Required) OAuth2 authorization endpoint URL.
 * `token_endpoint` - (Required) OAuth2 token endpoint URL.
 * `response_types` - (Optional) Set of OAuth2 response types supported by the authorization server.
+* `token_endpoint_auth_methods` - (Optional) Set of one or two client authentication methods supported by the token endpoint. Valid values are `client_secret_post` and `client_secret_basic`.
 
 ## Attribute Reference
 
